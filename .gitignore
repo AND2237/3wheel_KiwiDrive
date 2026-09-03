@@ -1,0 +1,25 @@
+# Not part of this repo (separate concerns, handled separately)
+/android/
+/androidDev_reports/
+
+# STM32CubeIDE workspace-level metadata (not project files)
+/Code/.metadata/
+
+# STM32CubeIDE build output
+/Code/rc_kiwi_drive/Debug/
+/Code/rc_kiwi_drive/Release/
+
+# Eclipse/CDT local IDE state (indexer cache, UI layout)
+/Code/rc_kiwi_drive/.settings/
+
+# Vendor HAL/CMSIS -- regenerate via STM32CubeMX from the .ioc
+/Code/rc_kiwi_drive/Drivers/
+
+# Generic build artifacts
+*.o
+*.d
+*.elf
+*.bin
+*.map
+*.hex
+*.list
