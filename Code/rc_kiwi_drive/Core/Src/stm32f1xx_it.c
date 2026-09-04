@@ -22,6 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "comm.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -199,5 +200,11 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
-
+/**
+  * @brief This function handles USART2 global interrupt (ESP8266 comm link).
+  */
+void USART2_IRQHandler(void)
+{
+  Comm_UART_IRQHandler(&huart2);
+}
 /* USER CODE END 1 */

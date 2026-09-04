@@ -1,0 +1,90 @@
+diff --git a/Code/rc_kiwi_drive/Core/Inc/main.h b/Code/rc_kiwi_drive/Core/Inc/main.h
+index b03810d..5000b8c 100644
+--- a/Code/rc_kiwi_drive/Core/Inc/main.h
++++ b/Code/rc_kiwi_drive/Core/Inc/main.h
+@@ -55,7 +55,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+ void Error_Handler(void);
+ 
+ /* USER CODE BEGIN EFP */
+-
++extern UART_HandleTypeDef huart2;
+ /* USER CODE END EFP */
+ 
+ /* Private defines -----------------------------------------------------------*/
+diff --git a/Code/rc_kiwi_drive/Core/Inc/stm32f1xx_it.h b/Code/rc_kiwi_drive/Core/Inc/stm32f1xx_it.h
+index 77bd330..c6923c0 100644
+--- a/Code/rc_kiwi_drive/Core/Inc/stm32f1xx_it.h
++++ b/Code/rc_kiwi_drive/Core/Inc/stm32f1xx_it.h
+@@ -56,7 +56,7 @@ void DebugMon_Handler(void);
+ void PendSV_Handler(void);
+ void SysTick_Handler(void);
+ /* USER CODE BEGIN EFP */
+-
++void USART2_IRQHandler(void);
+ /* USER CODE END EFP */
+ 
+ #ifdef __cplusplus
+diff --git a/Code/rc_kiwi_drive/Core/Src/stm32f1xx_hal_msp.c b/Code/rc_kiwi_drive/Core/Src/stm32f1xx_hal_msp.c
+index 4e7bd17..e2798fa 100644
+--- a/Code/rc_kiwi_drive/Core/Src/stm32f1xx_hal_msp.c
++++ b/Code/rc_kiwi_drive/Core/Src/stm32f1xx_hal_msp.c
+@@ -396,7 +396,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
+     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+ 
+     /* USER CODE BEGIN USART2_MspInit 1 */
+-
++    HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
++    HAL_NVIC_EnableIRQ(USART2_IRQn);
+     /* USER CODE END USART2_MspInit 1 */
+ 
+   }
+@@ -426,7 +427,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
+     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
+ 
+     /* USER CODE BEGIN USART2_MspDeInit 1 */
+-
++    HAL_NVIC_DisableIRQ(USART2_IRQn);
+     /* USER CODE END USART2_MspDeInit 1 */
+   }
+ 
+diff --git a/Code/rc_kiwi_drive/Core/Src/stm32f1xx_it.c b/Code/rc_kiwi_drive/Core/Src/stm32f1xx_it.c
+index 540ecf4..a6ec918 100644
+--- a/Code/rc_kiwi_drive/Core/Src/stm32f1xx_it.c
++++ b/Code/rc_kiwi_drive/Core/Src/stm32f1xx_it.c
+@@ -22,6 +22,7 @@
+ #include "stm32f1xx_it.h"
+ /* Private includes ----------------------------------------------------------*/
+ /* USER CODE BEGIN Includes */
++#include "comm.h"
+ /* USER CODE END Includes */
+ 
+ /* Private typedef -----------------------------------------------------------*/
+@@ -199,5 +200,11 @@ void SysTick_Handler(void)
+ /******************************************************************************/
+ 
+ /* USER CODE BEGIN 1 */
+-
++/**
++  * @brief This function handles USART2 global interrupt (ESP8266 comm link).
++  */
++void USART2_IRQHandler(void)
++{
++  Comm_UART_IRQHandler(&huart2);
++}
+ /* USER CODE END 1 */
+diff --git a/Code/rc_kiwi_drive/STM32F103C8TX_FLASH.ld b/Code/rc_kiwi_drive/STM32F103C8TX_FLASH.ld
+index 0d6710e..7bf2fe8 100644
+--- a/Code/rc_kiwi_drive/STM32F103C8TX_FLASH.ld
++++ b/Code/rc_kiwi_drive/STM32F103C8TX_FLASH.ld
+@@ -45,7 +45,10 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
+ MEMORY
+ {
+   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 20K
+-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 64K
++  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 63K
++  /* Last 1K page (0x0800FC00-0x0800FFFF) reserved for nvs.c's
++   * calibration storage -- see nvs.c's header comment. Never
++   * available to the linker for code/data placement. */
+ }
+ 
+ /* Sections */
