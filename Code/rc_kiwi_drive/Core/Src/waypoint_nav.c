@@ -77,7 +77,7 @@ static void nav_refresh_debug(float dist, float bearing, float theta,
     s_dbg.state        = (uint8_t)s_state;
     s_dbg.target       = s_target;
     s_dbg.wp_count     = s_wp_count;
-    s_dbg.flags        = (uint8_t)((s_active?2u:0u));
+    s_dbg.flags        = (uint8_t)((s_active?2u:0u) | (s_state==NAV_STATE_SETTLING?1u:0u));
     s_dbg.fault        = s_fault;
     s_dbg.settle_ticks = s_settle_ticks;
     s_dbg.d1           = (int16_t)d1;

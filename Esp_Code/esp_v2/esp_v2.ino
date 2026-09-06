@@ -378,8 +378,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       break;
     }
     case WStype_DISCONNECTED:
+      /* Operator lost their control link. Zeroing the manual-drive
+       * command is not enough by itself: CMD_NAV_START/CMD_CAL_SPIN/
+       * CMD_CAL_ROLL put the STM32 into an autonomous mode that
+       * ignores CMD_SET_SPEED entirely (see main.c's OnCommandReceived
+       * -- CMD_SET_SPEED is dropped while Nav_IsActive()), so sending
+       * vx=vy=omega=0 here does nothing to stop an active patrol or
+       * calibration run. Explicitly forward the STOP commands too;
+       * both are safe/idempotent no-ops on the STM32 side when nothing
+       * is active (Nav_Stop/Cal_Abort both early-return if !active). */
       cmdVx = 0.0f; cmdVy = 0.0f; cmdOmega = 0.0f;
       updateMotors();
+      sendPacket(CMD_NAV_STOP, NULL, 0);
+      sendPacket(CMD_CAL_STOP, NULL, 0);
       break;
     default: break;
   }
@@ -422,6 +433,7 @@ body{display:flex;flex-direction:column;}
 .auto-badge{font-size:9px;font-weight:900;letter-spacing:1px;padding:4px 8px;border-radius:10px;background:#2a1a05;color:var(--warn);border:1px solid #3d2a10;animation:pulse 1.2s infinite;}
 .conn-badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:12px;background:#1a0a0f;color:var(--danger);border:1px solid #3d1020;transition:all .3s;flex-shrink:0;}
 .conn-badge.ok{background:#0a1a12;color:var(--accentG);border-color:#103d20;}
+.conn-badge.stale{background:#2a1a05;color:var(--warn);border-color:#3d2a10;animation:pulse 1.2s infinite;}
 .telem{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 10px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
 .tc{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 6px;text-align:center;}
 .tc-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;}
@@ -578,7 +590,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
 .log-stream, #fullLog { flex: 1; overflow-y: auto; padding: 8px; font-family: monospace; font-size: 11px; line-height: 1.4; color: #c9d1d9; }
 #fullLog { background: var(--surface); margin: 0; border-radius: 0; }
 
-.log-row { display: grid; grid-template-columns: 80px 1fr 1fr 1fr 1fr; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 2px 4px; }
+.log-row { display: grid; grid-template-columns: 80px 1fr 1fr 1fr 1fr 1fr; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 2px 4px; }
 .log-row.header { font-weight: bold; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 4px; position: sticky; top: 0; background: rgba(13, 17, 23, 0.95); z-index: 1; }
 .log-page-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 
@@ -766,11 +778,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
         </div>
     </div>
     <div class="log-metrics">
-        <div class="metric"><span class="m-label">Δ LEFT</span><span class="m-val cL" id="logDL">0</span></div>
-        <div class="metric"><span class="m-label">Δ RIGHT</span><span class="m-val cR" id="logDR">0</span></div>
+        <div class="metric"><span class="m-label">Δ ENC 1</span><span class="m-val cL" id="logDL">0</span></div>
+        <div class="metric"><span class="m-label">Δ ENC 2</span><span class="m-val cR" id="logDR">0</span></div>
+        <div class="metric"><span class="m-label">Δ ENC 3</span><span class="m-val cS" id="logDT">0</span></div>
         <div class="metric"><span class="m-label">GYRO RAW</span><span class="m-val cB" id="logGyro">0.0</span></div>
         <div class="metric"><span class="m-label">GYRO CORR</span><span class="m-val cS" id="logGyroCorr">0.0</span></div>
-        <div class="metric"><span class="m-label">HD (SLIP)</span><span class="m-val cD" id="logHD">0.0</span></div>
+        <div class="metric"><span class="m-label">HEAD DISAGREE</span><span class="m-val cD" id="logHD">0.0</span></div>
         <div class="metric"><span class="m-label">BIAS</span><span class="m-val" id="logBias">0.0</span></div>
         <div class="metric"><span class="m-label">CALIBRATED</span><span class="m-val" id="logCal">--</span></div>
         <div class="metric"><span class="m-label">MAX dt</span><span class="m-val" id="logMaxDt">--</span></div>
@@ -778,7 +791,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
     <div class="log-stream-wrap">
         <div class="log-stream" id="logStream">
             <div class="log-row header">
-                <span>TIME</span><span>Δ L</span><span>Δ R</span><span>GYRO</span><span>SLIP</span>
+                <span>TIME</span><span>Δ1</span><span>Δ2</span><span>Δ3</span><span>GYRO</span><span>H.DIS</span>
             </div>
         </div>
     </div>
@@ -832,16 +845,33 @@ function updateOdomUI(){
   const disp = Math.sqrt(odomX*odomX+odomY*odomY);
   elValDisp.textContent = disp.toFixed(2);
 }
+/* Time of the last CMD_STATUS-derived telemetry packet actually
+ * received from the STM32 (via the ESP's WS_TELEMETRY_TYPE broadcast,
+ * itself only sent when the ESP's onStatusReceived() sets its
+ * telem_updated flag from a real serial packet -- see esp_v2.ino). A
+ * WebSocket can stay open (browser<->ESP) while the UART link to the
+ * STM32, or the STM32 itself, has gone quiet; the STM32 emits
+ * CMD_STATUS on a 100 ms cycle regardless of connection state, so a
+ * gap here is a genuine link/MCU health signal, not just idle robot. */
+let lastTelemetryMs = 0;
+const TELEMETRY_STALE_MS = 500;   /* 5x the 100 ms STM32 status period */
+function updateConnBadge(){
+  if(!connected){ connBadge.textContent='Offline'; connBadge.className='conn-badge'; return; }
+  if(Date.now()-lastTelemetryMs > TELEMETRY_STALE_MS){ connBadge.textContent='Stale'; connBadge.className='conn-badge stale'; return; }
+  connBadge.textContent='Online'; connBadge.className='conn-badge ok';
+}
+setInterval(updateConnBadge, 250);
 function connect(){
   ws = new WebSocket('ws://'+location.hostname+':81');
   ws.binaryType = 'arraybuffer';
-  ws.onopen = ()=>{ connected=true; connBadge.textContent='Online'; connBadge.className='conn-badge ok'; };
-  ws.onclose = ()=>{ connected=false; connBadge.textContent='Offline'; connBadge.className='conn-badge'; setJoy(0,0); sendCmd(); setTimeout(connect,2000); };
+  ws.onopen = ()=>{ connected=true; updateConnBadge(); };
+  ws.onclose = ()=>{ connected=false; updateConnBadge(); setJoy(0,0); sendCmd(); setTimeout(connect,2000); };
   ws.onmessage = (evt)=>{
     if(!(evt.data instanceof ArrayBuffer)) return;
     const dv = new DataView(evt.data);
     const mt = dv.getUint8(0);
     if(mt===0x02 && dv.byteLength>=28){
+      lastTelemetryMs = Date.now();
       rpm1El.textContent = dv.getFloat32(1,true).toFixed(0);
       rpm2El.textContent = dv.getFloat32(5,true).toFixed(0);
       rpm3El.textContent = dv.getFloat32(9,true).toFixed(0);
@@ -864,15 +894,16 @@ function connect(){
     else if(mt===0x06 && dv.byteLength>=9){ handleNavStatus(dv); }
     else if(mt===WS_NAV_WP_TYPE && dv.byteLength>=11){ handleNavWpData(dv); }
     else if (mt === 0x09 && dv.byteLength >= 62) { // WS_TELEM_LOG_TYPE -- see main.c's SendTelemetryLog for the 61-byte STM32 layout this mirrors (browser offset = STM32 offset + 1)
-        const dL = dv.getInt16(17, true);
-        const dR = dv.getInt16(19, true);
+        const d1 = dv.getInt16(17, true);
+        const d2 = dv.getInt16(19, true);
+        const d3 = dv.getInt16(21, true);
         const gyroRaw = dv.getFloat32(23, true);
         const gyroBias = dv.getFloat32(27, true);
         const hdSigned = dv.getFloat32(47, true);
         const isCal = dv.getUint8(56);
         const gyroScale = dv.getFloat32(57, true);
         const maxDtMs = dv.getUint8(61);
-        pushLogData(dL, dR, gyroRaw, hdSigned, gyroBias, isCal, gyroScale, maxDtMs);
+        pushLogData(d1, d2, d3, gyroRaw, hdSigned, gyroBias, isCal, gyroScale, maxDtMs);
     }
     else if(mt===WS_NAV_DEBUG_TYPE){ handleNavDebug(dv); }
     else if(mt===WS_CAL_TYPE && dv.byteLength>=15){ handleCalStatus(dv); }
@@ -1232,7 +1263,7 @@ function drawPatrolMap(){
     if(n>=2){patrolCtx.strokeStyle='rgba(0,255,157,0.45)'; patrolCtx.setLineDash([6,5]); patrolCtx.beginPath();
       patrolCtx.moveTo(toSX(navWP[n-1].x),toSY(navWP[n-1].y)); patrolCtx.lineTo(toSX(navWP[0].x),toSY(navWP[0].y)); patrolCtx.stroke(); patrolCtx.setLineDash([]);}
     for(let i=0;i<n;i++){const w=navWP[i]; const X=toSX(w.x),Y=toSY(w.y);
-      const isT=navActive&&(navState===1||navState===2||navState===3)&&i===navTarget;
+      const isT=navActive&&(navState===1||navState===2)&&i===navTarget;
       patrolCtx.beginPath(); patrolCtx.arc(X,Y,isT?11:9,0,Math.PI*2); patrolCtx.fillStyle=(i===0)?'#0a2a1a':'#0d1117'; patrolCtx.fill();
       patrolCtx.strokeStyle=isT?'#ffb020':((i===0)?'#00ff9d':'rgba(0,255,157,0.75)'); patrolCtx.lineWidth=isT?2.5:1.5; patrolCtx.stroke();
       patrolCtx.fillStyle='#c9d1d9'; patrolCtx.font='9px sans-serif'; patrolCtx.textAlign='center'; patrolCtx.textBaseline='middle'; patrolCtx.fillText(String(i+1),X,Y);}
@@ -1263,9 +1294,14 @@ function updatePatrolUI(){
   const st=document.getElementById('pvState');
   if(navFault===1&&!navActive){st.textContent='ENC FAULT'; st.className='sv-state fault';}
   else if(!navActive){st.textContent='IDLE'; st.className='sv-state idle';}
-  else if(navState===1){st.textContent='ALIGN WP'+(navTarget+1); st.className='sv-state work';}
-  else if(navState===2){st.textContent='TO WP'+(navTarget+1); st.className='sv-state work';}
-  else if(navState===3){st.textContent='AT WP'+(navTarget+1); st.className='sv-state rec';}
+  /* NAV_STATE_DRIVING (1): commanding body-frame Vx/Vy straight at the
+   * target's world-frame bearing, heading held wherever it already is
+   * (no align-to-face phase -- holonomic doesn't need one). */
+  else if(navState===1){st.textContent='DRIVING \u2192 WP'+(navTarget+1); st.className='sv-state work';}
+  /* NAV_STATE_SETTLING (2): power cut, coasting to a stop and waiting
+   * for confirmed-zero wheel deltas (or the settle timeout) before
+   * advancing to the next waypoint. */
+  else if(navState===2){st.textContent='SETTLING @ WP'+(navTarget+1); st.className='sv-state rec';}
   const info=document.getElementById('pvInfo');
   if(navActive) info.textContent='target WP'+(navTarget+1)+' \u00B7 dist '+navDist.toFixed(2)+' m';
   else if(robotPos.valid) info.textContent='x '+robotPos.x.toFixed(2)+', y '+robotPos.y.toFixed(2)+' m';
@@ -1480,13 +1516,14 @@ let logPaused = false;
 const logStreamEl = document.getElementById('logStream');
 const fullLogEl = document.getElementById('fullLog');
 
-function pushLogData(dL, dR, gyro, hd, gyroBias, isCal, gyroScale, maxDtMs) {
+function pushLogData(d1, d2, d3, gyro, hd, gyroBias, isCal, gyroScale, maxDtMs) {
     if (logPaused) return;
 
     const gyroCorr = (gyro - gyroBias) * gyroScale;
 
-    document.getElementById('logDL').textContent = dL;
-    document.getElementById('logDR').textContent = dR;
+    document.getElementById('logDL').textContent = d1;
+    document.getElementById('logDR').textContent = d2;
+    document.getElementById('logDT').textContent = d3;
     document.getElementById('logGyro').textContent = gyro.toFixed(2);
     document.getElementById('logGyroCorr').textContent = gyroCorr.toFixed(2);
     document.getElementById('logHD').textContent = hd.toFixed(2);
@@ -1500,7 +1537,7 @@ function pushLogData(dL, dR, gyro, hd, gyroBias, isCal, gyroScale, maxDtMs) {
 
     const now = new Date();
     const time = now.toLocaleTimeString('en-US', { hour12: false }) + '.' + String(now.getMilliseconds()).padStart(3, '0');
-    const entry = { time, dL, dR, gyro: gyro.toFixed(1), hd: hd.toFixed(2) };
+    const entry = { time, d1, d2, d3, gyro: gyro.toFixed(1), hd: hd.toFixed(2) };
     
     logHistory.push(entry);
     if (logHistory.length > MAX_LOGS) logHistory.shift();
@@ -1508,7 +1545,7 @@ function pushLogData(dL, dR, gyro, hd, gyroBias, isCal, gyroScale, maxDtMs) {
     if (logStreamEl) {
         const row = document.createElement('div');
         row.className = 'log-row';
-        row.innerHTML = `<span>${entry.time}</span><span class="cL">${entry.dL}</span><span class="cR">${entry.dR}</span><span class="cB">${entry.gyro}</span><span class="cD">${entry.hd}</span>`;
+        row.innerHTML = `<span>${entry.time}</span><span class="cL">${entry.d1}</span><span class="cR">${entry.d2}</span><span class="cS">${entry.d3}</span><span class="cB">${entry.gyro}</span><span class="cD">${entry.hd}</span>`;
         logStreamEl.appendChild(row);
         
         // Cap DOM nodes for performance
@@ -1524,14 +1561,14 @@ function renderFullLog() {
     fullLogEl.innerHTML = '';
     const header = document.createElement('div');
     header.className = 'log-row header';
-    header.innerHTML = `<span>TIME</span><span>Δ L</span><span>Δ R</span><span>GYRO</span><span>SLIP</span>`;
+    header.innerHTML = `<span>TIME</span><span>Δ1</span><span>Δ2</span><span>Δ3</span><span>GYRO</span><span>H.DIS</span>`;
     fullLogEl.appendChild(header);
     
     const fragment = document.createDocumentFragment();
     for (const entry of logHistory) {
         const row = document.createElement('div');
         row.className = 'log-row';
-        row.innerHTML = `<span>${entry.time}</span><span class="cL">${entry.dL}</span><span class="cR">${entry.dR}</span><span class="cB">${entry.gyro}</span><span class="cD">${entry.hd}</span>`;
+        row.innerHTML = `<span>${entry.time}</span><span class="cL">${entry.d1}</span><span class="cR">${entry.d2}</span><span class="cS">${entry.d3}</span><span class="cB">${entry.gyro}</span><span class="cD">${entry.hd}</span>`;
         fragment.appendChild(row);
     }
     fullLogEl.appendChild(fragment);
@@ -1553,7 +1590,7 @@ document.getElementById('btnLogPause').addEventListener('click', (e) => {
 function clearAllLogs() {
     logHistory = [];
     if (logStreamEl) {
-        logStreamEl.innerHTML = '<div class="log-row header"><span>TIME</span><span>Δ L</span><span>Δ R</span><span>GYRO</span><span>SLIP</span></div>';
+        logStreamEl.innerHTML = '<div class="log-row header"><span>TIME</span><span>Δ1</span><span>Δ2</span><span>Δ3</span><span>GYRO</span><span>H.DIS</span></div>';
     }
     if (appMode === 'log') renderFullLog();
 }
