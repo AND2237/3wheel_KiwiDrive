@@ -339,7 +339,7 @@ void sendSetVelocity(float vx, float vy, float omega) {
  * chassis' real top speed (PID/duty clamps on the STM32 side handle
  * any excess gracefully either way) and adjust to taste once the
  * real robot is on the bench. */
-static const float maxSpeedMps   = 0.8f;
+static const float maxSpeedMps   = 1.0f;
 static const float maxOmegaRadps = 3.0f;
 static float cmdVx = 0.0f, cmdVy = 0.0f, cmdOmega = 0.0f;
 void updateMotors() {
@@ -1038,8 +1038,8 @@ function bindHold(id,onDown,onUp){
 }
 const zero=()=>{ setJoy(0,0); sendCmd(); };
 bindHold('btnStop', stopAll, ()=>{});
-bindHold('btnFwd',  ()=>{setJoy(80,0);sendCmd();}, zero);
-bindHold('btnRev',  ()=>{setJoy(-60,0);sendCmd();}, zero);
+bindHold('btnFwd',  ()=>{setJoy(100,0);sendCmd();}, zero);
+bindHold('btnRev',  ()=>{setJoy(-100,0);sendCmd();}, zero);
 bindHold('btnCcw',  ()=>{cmdOmega= maxOmegaRadps;sendCmd();}, ()=>{cmdOmega=0;sendCmd();});
 bindHold('btnCw',   ()=>{cmdOmega=-maxOmegaRadps;sendCmd();}, ()=>{cmdOmega=0;sendCmd();});
 document.getElementById('btnResetDistance').addEventListener('click',()=>{
