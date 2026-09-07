@@ -104,7 +104,7 @@ void KiwiKinematics_InverseKinematics(const KiwiKinematics_t *kin,
 
     for (int i = 0; i < 3; i++) {
         float beta = kin->mount_angle_rad[i];
-        float w_radps = (-sinf(beta) * vx_mps + cosf(beta) * vy_mps
+        float w_radps = (-sinf(beta) * vx_mps - cosf(beta) * vy_mps
                           + kin->robot_radius_m * omega_radps) * inv_r;
         *out[i] = w_radps * RAD_PER_SEC_TO_RPM;
     }

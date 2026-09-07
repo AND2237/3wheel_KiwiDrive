@@ -11,7 +11,7 @@
 #define DEFAULT_KI   1.5f
 #define DEFAULT_KD   0.0f
 
-#define MAX_DUTY_PERCENT  90u
+#define MAX_DUTY_PERCENT  100u
 
 #define PID_OUT_MIN  (-(float)MAX_DUTY_PERCENT)
 #define PID_OUT_MAX  ((float)MAX_DUTY_PERCENT)

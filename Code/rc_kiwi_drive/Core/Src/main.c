@@ -67,9 +67,9 @@
  * kiwi_kinematics.h. The values below (90/210/330) are a placeholder
  * symmetric 120-degree default -- correct them before relying on any
  * of this. */
-#define KIWI_MOUNT_ANGLE1_DEG 90.0f
-#define KIWI_MOUNT_ANGLE2_DEG 210.0f
-#define KIWI_MOUNT_ANGLE3_DEG 330.0f
+#define KIWI_MOUNT_ANGLE1_DEG 0.0f
+#define KIWI_MOUNT_ANGLE2_DEG 120.0f
+#define KIWI_MOUNT_ANGLE3_DEG 240.0f
 #define KIWI_DEG2RAD(d) ((d) * 3.14159265359f / 180.0f)
 
 #define NAV_IDLE_SPEED_TOL_MPS 0.02f

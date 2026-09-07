@@ -339,7 +339,7 @@ void sendSetVelocity(float vx, float vy, float omega) {
  * chassis' real top speed (PID/duty clamps on the STM32 side handle
  * any excess gracefully either way) and adjust to taste once the
  * real robot is on the bench. */
-static const float maxSpeedMps   = 0.4f;
+static const float maxSpeedMps   = 0.8f;
 static const float maxOmegaRadps = 3.0f;
 static float cmdVx = 0.0f, cmdVy = 0.0f, cmdOmega = 0.0f;
 void updateMotors() {
@@ -951,7 +951,11 @@ function sendCmd(){
    * flip needed. joyStr (stick pushed right, screen +X) should
    * strafe the robot to ITS OWN right, i.e. body -Y -- hence the
    * sign flip below. */
-  sendVelocity((joyThr/100)*maxSpeedMps, -(joyStr/100)*maxSpeedMps, cmdOmega);
+  sendVelocity(
+    (joyThr/100)*maxSpeedMps, 
+    -(joyStr/100)*maxSpeedMps, 
+    cmdOmega
+    );
 }
 function stopAll(){ joyThr=0; joyStr=0; cmdOmega=0; updateKnobUI(); updateDirArrows(); sendCmd(); }
 const jZone=document.getElementById('jZone'); let jTouchId=null, jMouseDown=false;
