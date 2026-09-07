@@ -415,7 +415,19 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 body{display:flex;flex-direction:column;}
 .hidden{display:none !important;}
 .page{flex:1;display:flex;flex-direction:column;min-height:0;}
-#freeMode,#surveyMode,#patrolMode,#calibMode,#logMode{overflow-y:auto;touch-action:pan-y;}#calibMode, #calibMode *{touch-action:pan-y;}
+#freeMode,#surveyMode,#patrolMode,#calibMode,#logMode{
+    overflow-y:auto;
+    touch-action:pan-y;
+    min-height:0;
+    -webkit-overflow-scrolling:touch;    
+}
+
+#freeMode{
+    min-height:0;
+    padding-bottom:env(safe-area-inset-bottom);
+    scroll-padding-bottom:env(safe-area-inset-bottom);
+}
+#calibMode, #calibMode *{touch-action:pan-y;}
 #calibMode .sv-card{margin:6px 10px 0;padding:8px;}
 #calibMode .cal-note{margin-bottom:6px;}
 #calibMode .cal-row{margin-bottom:6px;}
@@ -455,9 +467,18 @@ body{display:flex;flex-direction:column;}
 .odom-btn.origin{background:#0a2a1a;color:var(--accentG);border:1px solid #103d20;}
 .odom-btn.report{background:#2a0a0a;color:var(--danger);border:1px solid #3d1020;}
 .odom-btn:active{transform:scale(0.96);}
-.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:16px;min-height:0;}
+#freeMode .main{
+    flex:0 0 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding:8px 12px calc(24px + env(safe-area-inset-bottom) + 56px);
+    gap:12px;
+}
 .joystick-wrap{position:relative;display:flex;align-items:center;justify-content:center;}
-.joystick-zone{position:relative;width:min(280px,70vw,36vh);height:min(280px,70vw,36vh);border-radius:50%;background:radial-gradient(circle at center,#0d1a26 0%,#080c10 70%);border:2px solid var(--border);box-shadow:0 0 0 1px #1e2d3d,inset 0 0 40px rgba(0,0,0,0.6);cursor:crosshair;}
+.joystick-zone{position:relative;width:min(280px,70vw,30vh);height:min(280px,70vw,30vh);border-radius:50%;background:radial-gradient(circle at center,#0d1a26 0%,#080c10 70%);border:2px solid var(--border);box-shadow:0 0 0 1px #1e2d3d,inset 0 0 40px rgba(0,0,0,0.6);cursor:crosshair;}
 .joystick-zone::before,.joystick-zone::after{content:'';position:absolute;pointer-events:none;background:rgba(255,255,255,0.05);}
 .joystick-zone::before{left:50%;top:10%;bottom:10%;width:1px;transform:translateX(-50%);}
 .joystick-zone::after{top:50%;left:10%;right:10%;height:1px;transform:translateY(-50%);}
@@ -466,7 +487,7 @@ body{display:flex;flex-direction:column;}
 .knob{position:absolute;width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 38% 35%,#2a3a4a,#0d1117);border:2px solid var(--accent);box-shadow:0 0 20px rgba(0,200,255,0.2),0 4px 12px rgba(0,0,0,0.5);pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%);transition:border-color .2s,box-shadow .2s;display:flex;align-items:center;justify-content:center;}
 .knob.active{border-color:#fff;box-shadow:0 0 28px rgba(0,200,255,0.4),0 4px 16px rgba(0,0,0,0.6);}
 .knob-inner{width:24px;height:24px;border-radius:50%;background:var(--accent);opacity:0.6;box-shadow:0 0 10px var(--accent);}
-.dir-ring{position:absolute;width:calc(min(280px,70vw,36vh) + 32px);height:calc(min(280px,70vw,36vh) + 32px);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.dir-ring{position:absolute;width:calc(min(280px,70vw,30vh) + 32px);height:calc(min(280px,70vw,30vh) + 32px);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
 .dir-arr{position:absolute;font-size:14px;opacity:0.15;transition:opacity .15s,color .15s;width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
 .dir-arr.N{top:0;left:50%;transform:translateX(-50%);}
 .dir-arr.S{bottom:0;left:50%;transform:translateX(-50%);}
@@ -611,18 +632,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
     <div class="conn-badge" id="connBadge">Offline</div>
   </div>
 </div>
-<div class="telem" id="telemPanel">
-  <div class="tc"><div class="tc-label">RPM 1</div><div class="tc-val cL" id="rpm1">&mdash;</div><div class="tc-unit">rpm</div></div>
-  <div class="tc"><div class="tc-label">RPM 2</div><div class="tc-val cR" id="rpm2">&mdash;</div><div class="tc-unit">rpm</div></div>
-  <div class="tc"><div class="tc-label">RPM 3</div><div class="tc-val cS" id="rpm3">&mdash;</div><div class="tc-unit">rpm</div></div>
-  <div class="tc"><div class="tc-label">Heading</div><div class="tc-val cS" id="headingVal">0</div><div class="tc-unit">deg</div></div>
-  <div class="tc" style="border-color:#2a1a3d;"><div class="tc-label">Enc 1</div><div class="tc-val" style="color:#aa80ff;font-size:14px;" id="enc1">0</div><div class="tc-unit">cnt</div></div>
-  <div class="tc" style="border-color:#2a1a3d;"><div class="tc-label">Enc 2</div><div class="tc-val" style="color:#aa80ff;font-size:14px;" id="enc2">0</div><div class="tc-unit">cnt</div></div>
-  <div class="tc" style="border-color:#2a1a3d;"><div class="tc-label">Enc 3</div><div class="tc-val" style="color:#aa80ff;font-size:14px;" id="enc3">0</div><div class="tc-unit">cnt</div></div>
-  <div class="tc" style="border-color:#3d1a2a;"><div class="tc-label">Duty 1</div><div class="tc-val cD" id="duty1">0</div><div class="tc-unit">%</div></div>
-  <div class="tc" style="border-color:#3d1a2a;"><div class="tc-label">Duty 2</div><div class="tc-val cD" id="duty2">0</div><div class="tc-unit">%</div></div>
-  <div class="tc" style="border-color:#3d1a2a;"><div class="tc-label">Duty 3</div><div class="tc-val cD" id="duty3">0</div><div class="tc-unit">%</div></div>
-</div>
 <!-- ============ FREE DRIVE ============ -->
 <div id="freeMode" class="page">
   <div class="odom-panel" id="odomPanel">
@@ -631,11 +640,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
       <div class="odom-cell"><div class="odom-label">Delta X</div><div class="odom-val" id="valX">0.00</div><div class="odom-unit">m</div></div>
       <div class="odom-cell"><div class="odom-label">Delta Y</div><div class="odom-val" id="valY">0.00</div><div class="odom-unit">m</div></div>
       <div class="odom-cell"><div class="odom-label">Heading</div><div class="odom-val" id="valTheta">0&deg;</div><div class="odom-unit">deg</div></div>
-      <div class="odom-cell highlight"><div class="odom-label">Displacement</div><div class="odom-val" id="valDisp">0.00</div><div class="odom-unit">m</div></div>
+      <div class="odom-cell highlight"><div class="odom-label">Distance</div><div class="odom-val" id="valDistance">0.00</div><div class="odom-unit">m</div></div>
     </div>
     <div class="odom-actions">
-      <button class="odom-btn origin" id="btnSetOrigin">Set Origin</button>
-      <button class="odom-btn report" id="btnEndReport">End &amp; Report</button>
+      <button class="odom-btn origin" id="btnResetDistance">Reset Distance</button>
     </div>
   </div>
   <div class="main">
@@ -805,6 +813,10 @@ const rpm2El = document.getElementById('rpm2');
 const rpm3El = document.getElementById('rpm3');
 const headingEl = document.getElementById('headingVal');
 let odomX = 0, odomY = 0, odomTheta = 0;
+let odometerDistance = 0;
+let odometerLastX = 0;
+let odometerLastY = 0;
+let odometerInitialized = false;
 let odomActive = false;
 const elOdomStatus = document.getElementById('odomStatus');
 const elValX = document.getElementById('valX');
@@ -839,10 +851,12 @@ let pvDriveMode = 0;
 function updateOdomUI(){
   elValX.textContent = odomX.toFixed(2);
   elValY.textContent = odomY.toFixed(2);
-  elValTheta.textContent = (odomTheta*180/Math.PI).toFixed(0)+'\u00B0';
-  headingEl.textContent = (odomTheta*180/Math.PI).toFixed(0);   
-  const disp = Math.sqrt(odomX*odomX+odomY*odomY);
-  elValDisp.textContent = disp.toFixed(2);
+  elValTheta.textContent = (odomTheta*180/Math.PI).toFixed(0)+'°';
+
+  const distanceEl = document.getElementById('valDistance');
+  if(distanceEl){
+    distanceEl.textContent = odometerDistance.toFixed(2);
+  }
 }
 /* Time of the last CMD_STATUS-derived telemetry packet actually
  * received from the STM32 (via the ESP's WS_TELEMETRY_TYPE broadcast,
@@ -871,23 +885,52 @@ function connect(){
     const mt = dv.getUint8(0);
     if(mt===0x02 && dv.byteLength>=28){
       lastTelemetryMs = Date.now();
-      rpm1El.textContent = dv.getFloat32(1,true).toFixed(0);
-      rpm2El.textContent = dv.getFloat32(5,true).toFixed(0);
-      rpm3El.textContent = dv.getFloat32(9,true).toFixed(0);
-      document.getElementById('enc1').textContent=dv.getInt32(13,true);
-      document.getElementById('enc2').textContent=dv.getInt32(17,true);
-      document.getElementById('enc3').textContent=dv.getInt32(21,true);
-      document.getElementById('duty1').textContent=dv.getUint8(25);
-      document.getElementById('duty2').textContent=dv.getUint8(26);
-      document.getElementById('duty3').textContent=dv.getUint8(27);
     }
     else if(mt===0x03 && dv.byteLength>=13){
-      odomX=dv.getFloat32(1,true); odomY=dv.getFloat32(5,true); odomTheta=dv.getFloat32(9,true);
-      updateOdomUI(); odomActive=false;
-      elOdomStatus.textContent='Reported'; elOdomStatus.className='odom-status';
-      robotPos.x=odomX; robotPos.y=odomY; robotPos.theta=odomTheta; robotPos.valid=true;
-      if(appMode==='survey'){ updateRobotReadout(); drawMap(); }
-      if(appMode==='patrol'){ drawPatrolMap(); }
+        const newX = dv.getFloat32(1,true);
+  const newY = dv.getFloat32(5,true);
+  const newTheta = dv.getFloat32(9,true);
+
+  if(appMode === 'free'){
+
+    if(!odometerInitialized){
+      odometerLastX = newX;
+      odometerLastY = newY;
+      odometerInitialized = true;
+    }
+    else{
+      const dx = newX - odometerLastX;
+      const dy = newY - odometerLastY;
+
+      odometerDistance += Math.hypot(dx,dy);
+
+      odometerLastX = newX;
+      odometerLastY = newY;
+    }
+  }
+
+  odomX = newX;
+  odomY = newY;
+  odomTheta = newTheta;
+
+  updateOdomUI();
+
+  elOdomStatus.textContent='Recording';
+  elOdomStatus.className='odom-status active';
+
+  robotPos.x=odomX;
+  robotPos.y=odomY;
+  robotPos.theta=odomTheta;
+  robotPos.valid=true;
+
+  if(appMode==='survey'){
+    updateRobotReadout();
+    drawMap();
+  }
+
+  if(appMode==='patrol'){
+    drawPatrolMap();
+  }
     }
     else if(mt===0x04){ handleVertexMessage(dv); }
     else if(mt===0x06 && dv.byteLength>=9){ handleNavStatus(dv); }
@@ -967,7 +1010,19 @@ function getJoyVal(cx,cy){
   return {thr:Math.round((-dy/maxR)*100), str:Math.round((dx/maxR)*100)};
 }
 jZone.addEventListener('touchstart',(e)=>{e.preventDefault(); if(jTouchId!==null)return; const t=e.changedTouches[0]; jTouchId=t.identifier; const v=getJoyVal(t.clientX,t.clientY); setJoy(v.thr,v.str); sendCmd(); if(navigator.vibrate)navigator.vibrate(8);},{passive:false});
-document.addEventListener('touchmove',(e)=>{e.preventDefault(); for(const t of e.changedTouches){ if(t.identifier===jTouchId){ const v=getJoyVal(t.clientX,t.clientY); setJoy(v.thr,v.str); sendCmd(); }}},{passive:false});
+document.addEventListener('touchmove',(e)=>{
+    if(jTouchId===null) return;
+
+    e.preventDefault();
+
+    for(const t of e.changedTouches){
+        if(t.identifier===jTouchId){
+            const v=getJoyVal(t.clientX,t.clientY);
+            setJoy(v.thr,v.str);
+            sendCmd();
+        }
+    }
+},{passive:false});
 document.addEventListener('touchend',(e)=>{ for(const t of e.changedTouches){ if(t.identifier===jTouchId){ jTouchId=null; setJoy(0,0); sendCmd(); }}});
 document.addEventListener('touchcancel',()=>{ jTouchId=null; setJoy(0,0); sendCmd(); });
 jZone.addEventListener('mousedown',(e)=>{ jMouseDown=true; const v=getJoyVal(e.clientX,e.clientY); setJoy(v.thr,v.str); sendCmd(); });
@@ -987,17 +1042,20 @@ bindHold('btnFwd',  ()=>{setJoy(80,0);sendCmd();}, zero);
 bindHold('btnRev',  ()=>{setJoy(-60,0);sendCmd();}, zero);
 bindHold('btnCcw',  ()=>{cmdOmega= maxOmegaRadps;sendCmd();}, ()=>{cmdOmega=0;sendCmd();});
 bindHold('btnCw',   ()=>{cmdOmega=-maxOmegaRadps;sendCmd();}, ()=>{cmdOmega=0;sendCmd();});
-document.getElementById('btnSetOrigin').addEventListener('click',()=>{
-  if(!connected) return;
-  const b=new ArrayBuffer(1); new DataView(b).setUint8(0,0x03); ws.send(b);
-  resetAllFramesLocal(); odomActive=true; odomX=0;odomY=0;odomTheta=0; updateOdomUI();
-  elOdomStatus.textContent='Recording'; elOdomStatus.className='odom-status active';
-  if(navigator.vibrate)navigator.vibrate(20);
-});
-document.getElementById('btnEndReport').addEventListener('click',()=>{
-  if(!connected) return;
-  const b=new ArrayBuffer(1); new DataView(b).setUint8(0,0x04); ws.send(b);
-  if(navigator.vibrate)navigator.vibrate([30,50,30]);
+document.getElementById('btnResetDistance').addEventListener('click',()=>{
+  odometerDistance = 0;
+  odometerLastX = odomX;
+  odometerLastY = odomY;
+  odometerInitialized = true;
+
+  updateOdomUI();
+
+  elOdomStatus.textContent='Recording';
+  elOdomStatus.className='odom-status active';
+
+  if(navigator.vibrate){
+    navigator.vibrate(20);
+  }
 });
 /* ============ shared helpers ============ */
 function sendSimple(type,bytes){
@@ -1030,7 +1088,6 @@ function resetAllFramesLocal(){
 }
 function showPage(mode){
   appMode=mode;
-  document.getElementById('telemPanel').classList.toggle('hidden', mode === 'calib' || mode === 'log');
   document.getElementById('freeMode').classList.toggle('hidden',mode!=='free');
   document.getElementById('surveyMode').classList.toggle('hidden',mode!=='survey');
   document.getElementById('patrolMode').classList.toggle('hidden',mode!=='patrol');
@@ -1043,8 +1100,17 @@ function showPage(mode){
   document.getElementById('tabCalib').classList.toggle('active',mode==='calib');
   document.getElementById('tabLog').classList.toggle('active',mode==='log');
   
-  stopPosPoll(); stopPatrolPoll(); sendVelocity(0,0,0);
-  if(mode==='survey'){
+  stopPosPoll();
+  stopPatrolPoll();
+  stopFreeOdomPoll();
+  sendVelocity(0,0,0);
+  if(mode==='free'){
+    startFreeOdomPoll();
+    requestAnimationFrame(()=>{
+        updateOdomUI();
+    });
+  }
+  else if(mode==='survey'){
     sendSimple(0x05,[0]); surveyDriveMode=0; surveyHolding=false; updateSurveyUI();
     sendSimple(0x09); sendSimple(0x04); startPosPoll();
     requestAnimationFrame(()=>{resizeMapCanvas(); drawMap();});
@@ -1059,6 +1125,28 @@ function showPage(mode){
 }
 function startPosPoll(){ stopPosPoll(); posPollTimer=setInterval(()=>{ if(appMode==='survey'&&connected) sendSimple(0x04); },500); }
 function stopPosPoll(){ if(posPollTimer){clearInterval(posPollTimer); posPollTimer=null;} }
+let freeOdomPollTimer = null;
+
+function startFreeOdomPoll(){
+    stopFreeOdomPoll();
+
+    if(connected){
+        sendSimple(0x04);
+    }
+
+    freeOdomPollTimer = setInterval(()=>{
+        if(appMode==='free' && connected){
+            sendSimple(0x04);
+        }
+    }, 100);
+}
+
+function stopFreeOdomPoll(){
+    if(freeOdomPollTimer){
+        clearInterval(freeOdomPollTimer);
+        freeOdomPollTimer=null;
+    }
+}
 function startPatrolPoll(){ stopPatrolPoll(); patrolPollTimer=setInterval(()=>{ if(appMode==='patrol'&&connected) sendSimple(0x04); },200); }
 function stopPatrolPoll(){ if(patrolPollTimer){clearInterval(patrolPollTimer); patrolPollTimer=null;} }
 /* ============ Survey ============ */
