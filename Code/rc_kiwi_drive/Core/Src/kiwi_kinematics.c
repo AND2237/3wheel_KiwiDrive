@@ -104,7 +104,25 @@ void KiwiKinematics_InverseKinematics(const KiwiKinematics_t *kin,
 
     for (int i = 0; i < 3; i++) {
         float beta = kin->mount_angle_rad[i];
-        float w_radps = (-sinf(beta) * vx_mps - cosf(beta) * vy_mps
+        /* Sign convention MUST match the M matrix built in
+         * KiwiKinematics_Init() (+cos(beta) * Vy) -- that matrix is
+         * what Init inverts into kin->fwd, which odometry.c and
+         * calib.c use to turn wheel deltas back into body-frame
+         * displacement/velocity. A mismatched sign here does not
+         * break either function on its own (each stays internally
+         * self-consistent), but it means the ACTUAL physical Vy the
+         * robot executes is the negative of the Vy that was
+         * commanded, while odometry/calib still correctly report
+         * exactly what physically happened. Net effect: any command
+         * with a lateral (body-Y) component drives the robot along a
+         * mirrored path -- e.g. waypoint_nav.c's bearing-tracking
+         * controller, which commands vy = speed*sin(bearing-theta)
+         * every 10 ms tick, ends up driving toward the mirror image
+         * of the intended bearing whenever that bearing isn't exactly
+         * fore/aft of the current heading. See kiwi_kinematics.h's
+         * own header comment and KiwiKinematics_Init's derivation
+         * comment for the correct sign. */
+        float w_radps = (-sinf(beta) * vx_mps + cosf(beta) * vy_mps
                           + kin->robot_radius_m * omega_radps) * inv_r;
         *out[i] = w_radps * RAD_PER_SEC_TO_RPM;
     }
