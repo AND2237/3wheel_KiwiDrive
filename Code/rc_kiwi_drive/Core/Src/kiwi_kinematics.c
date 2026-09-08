@@ -65,7 +65,7 @@ bool KiwiKinematics_Init(KiwiKinematics_t *kin,
     float M[3][3];
     for (int i = 0; i < 3; i++) {
         M[i][0] = -sinf(kin->mount_angle_rad[i]);
-        M[i][1] =  cosf(kin->mount_angle_rad[i]);
+        M[i][1] = -cosf(kin->mount_angle_rad[i]);
         M[i][2] =  robot_radius_m;
     }
 
@@ -122,7 +122,7 @@ void KiwiKinematics_InverseKinematics(const KiwiKinematics_t *kin,
          * fore/aft of the current heading. See kiwi_kinematics.h's
          * own header comment and KiwiKinematics_Init's derivation
          * comment for the correct sign. */
-        float w_radps = (-sinf(beta) * vx_mps + cosf(beta) * vy_mps
+        float w_radps = (-sinf(beta) * vx_mps - cosf(beta) * vy_mps
                           + kin->robot_radius_m * omega_radps) * inv_r;
         *out[i] = w_radps * RAD_PER_SEC_TO_RPM;
     }
