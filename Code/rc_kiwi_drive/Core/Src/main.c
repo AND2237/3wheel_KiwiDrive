@@ -502,8 +502,11 @@ int main(void)
       }
       Odometry_Update(&g_odom, pos1, pos2, pos3, dtheta_gyro, mode_eff);
 
-      CheckEncoderFault();
-
+      if (!Nav_IsActive() && !Cal_IsActive())
+      {
+    	  CheckEncoderFault();
+      }
+        
 #if TELEMETRY_LOG_ENABLED
       if ((now - lastTelemetryLogTime) >= TELEMETRY_LOG_PERIOD_MS)
       {
