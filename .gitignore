@@ -17,6 +17,8 @@
 
 /esp_legacy/
 
+/Patches/
+
 # Generic build artifacts
 *.o
 *.d

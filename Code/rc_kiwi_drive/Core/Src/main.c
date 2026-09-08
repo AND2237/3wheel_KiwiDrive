@@ -506,7 +506,7 @@ int main(void)
       {
     	  CheckEncoderFault();
       }
-        
+
 #if TELEMETRY_LOG_ENABLED
       if ((now - lastTelemetryLogTime) >= TELEMETRY_LOG_PERIOD_MS)
       {
