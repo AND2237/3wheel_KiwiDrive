@@ -18,6 +18,7 @@
 /esp_legacy/
 
 /Patches/
+/PROJECT_MEMORY.md
 
 # Generic build artifacts
 *.o
