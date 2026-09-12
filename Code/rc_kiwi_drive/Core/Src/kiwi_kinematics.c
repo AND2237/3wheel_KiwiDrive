@@ -56,7 +56,7 @@ bool KiwiKinematics_Init(KiwiKinematics_t *kin,
     kin->mount_angle_rad[2] = mount_angle3_rad;
 
     /* Inverse-kinematics matrix M: w_i (rad/s) = (1/r) * M * [Vx,Vy,omega].
-     * row_i = [-sin(beta_i), cos(beta_i), R], derived from projecting
+     * row_i = [-sin(beta_i), -cos(beta_i), R], derived from projecting...
      * the rigid-body contact-point velocity at each wheel onto that
      * wheel's tangential driven axis (beta_i + 90 degrees) -- the only
      * direction an omniwheel resists/drives, since its rollers let it
@@ -105,7 +105,7 @@ void KiwiKinematics_InverseKinematics(const KiwiKinematics_t *kin,
     for (int i = 0; i < 3; i++) {
         float beta = kin->mount_angle_rad[i];
         /* Sign convention MUST match the M matrix built in
-         * KiwiKinematics_Init() (+cos(beta) * Vy) -- that matrix is
+         * KiwiKinematics_Init() (-cos(beta) * Vy) -- that matrix is
          * what Init inverts into kin->fwd, which odometry.c and
          * calib.c use to turn wheel deltas back into body-frame
          * displacement/velocity. A mismatched sign here does not

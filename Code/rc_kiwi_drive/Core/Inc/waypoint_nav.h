@@ -80,7 +80,7 @@ extern "C" {
 
 #define NAV_MAX_WAYPOINTS           16u     /* per requirement */
 
-#define NAV_ARRIVE_DIST_M           0.15f
+#define NAV_ARRIVE_DIST_M           0.05f
 /* Deceleration: below this distance the commanded speed ramps linearly
  * from cruise down to the floor. */
 #define NAV_APPROACH_RAMP_M         0.8f

@@ -23,8 +23,8 @@ void NVS_GetDefaults(NVS_Params_t *out)
     /* Placeholders -- measure your actual chassis and replace these,
      * the same way the old wheel_diameter/track_width defaults were
      * always meant to be measured-and-corrected, not final. */
-    out->wheel_radius   = 0.05f;
-    out->robot_radius   = 0.15f;
+    out->wheel_radius   = 0.035f;
+    out->robot_radius   = 0.12f;
     out->wheel_scale1   = 1.0f;
     out->wheel_scale2   = 1.0f;
     out->wheel_scale3   = 1.0f;

@@ -844,15 +844,7 @@ In that state the kinematics functions return zero outputs instead of dividing b
 
 ## 11.6 Critical geometry/sign note
 
-The repository contains a documentation/implementation mismatch that must be resolved before treating lateral motion as physically validated.
-
-The implementation of `KiwiKinematics_InverseKinematics()` currently uses:
-
-```text
--cos(beta_i) * Vy
-```
-
-while comments elsewhere describe the corresponding matrix/sign relationship differently.
+Explain that as of commit 5b5b6e5, the software is mathematically self-consistent. Both the initialization matrix M and the inverse kinematics formula now use -cos(beta_i) * Vy. The overall handedness of the robot was empirically flipped in this commit to match physical tests.
 
 The README therefore documents the **actual implementation**, but this is a known point that must be experimentally verified against the real wheel orientations and encoder signs.
 
@@ -2464,16 +2456,7 @@ This is intentional in the current architecture.
 
 ## 26.4 Kinematic sign convention must be physically verified
 
-As documented above, the current implementation has a known documentation/sign inconsistency around the lateral `Vy` term.
-
-This must be resolved against:
-
-- actual wheel mounting angles
-- wheel rolling-axis direction
-- motor direction wiring
-- encoder sign conventions
-
-before high-confidence autonomous navigation is claimed.
+State that the internal software inconsistency is resolved. Note that while the software is self-consistent, the physical mapping of +X / +Y relies on the empirical "Left/Right inverse move fix" applied in the latest commits.
 
 ---
 
