@@ -451,6 +451,10 @@ body{display:flex;flex-direction:column;}
 .tc-val{font-size:18px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;}
 .tc-unit{font-size:9px;color:var(--muted);}
 .cL{color:var(--accentG);}.cR{color:var(--accent);}.cS{color:#aa80ff;}.cD{color:var(--danger);}
+.telemetry-panel{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.telemetry-cell{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;min-width:0;}
+.telemetry-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+.telemetry-value{font-size:16px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .odom-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin:8px 10px;padding:12px;flex-shrink:0;}
 .odom-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .odom-title{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
@@ -476,6 +480,11 @@ body{display:flex;flex-direction:column;}
     justify-content:flex-start;
     padding:8px 12px calc(24px + env(safe-area-inset-bottom) + 56px);
     gap:12px;
+}
+@media (max-width:600px){
+    .telemetry-panel{
+        grid-template-columns:repeat(3,1fr);
+    }
 }
 .joystick-wrap{position:relative;display:flex;align-items:center;justify-content:center;}
 .joystick-zone{position:relative;width:min(280px,70vw,30vh);height:min(280px,70vw,30vh);border-radius:50%;background:radial-gradient(circle at center,#0d1a26 0%,#080c10 70%);border:2px solid var(--border);box-shadow:0 0 0 1px #1e2d3d,inset 0 0 40px rgba(0,0,0,0.6);cursor:crosshair;}
@@ -631,6 +640,40 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
     <span class="auto-badge hidden" id="autoBadge">AUTO</span>
     <div class="conn-badge" id="connBadge">Offline</div>
   </div>
+</div>
+<!-- ============ LIVE TELEMETRY ============ -->
+<div class="telemetry-panel" id="telemetryPanel">
+
+  <div class="telemetry-cell">
+    <div class="telemetry-label">ENC 1</div>
+    <div class="telemetry-value" id="enc1Val">0</div>
+  </div>
+
+  <div class="telemetry-cell">
+    <div class="telemetry-label">ENC 2</div>
+    <div class="telemetry-value" id="enc2Val">0</div>
+  </div>
+
+  <div class="telemetry-cell">
+    <div class="telemetry-label">ENC 3</div>
+    <div class="telemetry-value" id="enc3Val">0</div>
+  </div>
+
+  <div class="telemetry-cell">
+    <div class="telemetry-label">DUTY 1</div>
+    <div class="telemetry-value" id="duty1Val">0%</div>
+  </div>
+
+  <div class="telemetry-cell">
+    <div class="telemetry-label">DUTY 2</div>
+    <div class="telemetry-value" id="duty2Val">0%</div>
+  </div>
+
+  <div class="telemetry-cell">
+    <div class="telemetry-label">DUTY 3</div>
+    <div class="telemetry-value" id="duty3Val">0%</div>
+  </div>
+
 </div>
 <!-- ============ FREE DRIVE ============ -->
 <div id="freeMode" class="page">
@@ -812,6 +855,14 @@ const rpm1El = document.getElementById('rpm1');
 const rpm2El = document.getElementById('rpm2');
 const rpm3El = document.getElementById('rpm3');
 const headingEl = document.getElementById('headingVal');
+
+const enc1El = document.getElementById('enc1Val');
+const enc2El = document.getElementById('enc2Val');
+const enc3El = document.getElementById('enc3Val');
+
+const duty1El = document.getElementById('duty1Val');
+const duty2El = document.getElementById('duty2Val');
+const duty3El = document.getElementById('duty3Val');
 let odomX = 0, odomY = 0, odomTheta = 0;
 let odometerDistance = 0;
 let odometerLastX = 0;
@@ -884,12 +935,28 @@ function connect(){
     const dv = new DataView(evt.data);
     const mt = dv.getUint8(0);
     if(mt===0x02 && dv.byteLength>=28){
-      lastTelemetryMs = Date.now();
+        lastTelemetryMs = Date.now();
+
+        const enc1 = dv.getInt32(13, true);
+        const enc2 = dv.getInt32(17, true);
+        const enc3 = dv.getInt32(21, true);
+
+        const duty1 = dv.getUint8(25);
+        const duty2 = dv.getUint8(26);
+        const duty3 = dv.getUint8(27);
+
+        enc1El.textContent = enc1;
+        enc2El.textContent = enc2;
+        enc3El.textContent = enc3;
+
+        duty1El.textContent = duty1 + '%';
+        duty2El.textContent = duty2 + '%';
+        duty3El.textContent = duty3 + '%';
     }
     else if(mt===0x03 && dv.byteLength>=13){
         const newX = dv.getFloat32(1,true);
-  const newY = dv.getFloat32(5,true);
-  const newTheta = dv.getFloat32(9,true);
+        const newY = dv.getFloat32(5,true);
+        const newTheta = dv.getFloat32(9,true);
 
   if(appMode === 'free'){
 
@@ -956,7 +1023,7 @@ function connect(){
  * ESP firmware's own maxSpeedMps/maxOmegaRadps (see sendSetVelocity
  * above) -- an operator-feel tuning value, not a precision
  * calibration; the two can be re-tuned independently by feel. */
-const maxSpeedMps = 0.4, maxOmegaRadps = 3.0;
+const maxSpeedMps = 1.0, maxOmegaRadps = 3.0;
 let joyThr=0, joyStr=0;   /* joystick axes, -100..100: Y=fwd/back, X=strafe */
 let cmdOmega=0;           /* rad/s, from the CCW/CW hold buttons only -- independent of the joystick */
 function setJoy(thr,str){
