@@ -97,16 +97,16 @@ void MotorController_Update(MotorController_t *ctrl, float dt)
             dir  = MOTOR_FORWARD;
             duty = pid_out;
         } else {
-            dir  = MOTOR_STOP;
-            duty = 0.0f;
+            dir  = MOTOR_BACKWARD;
+            duty = -pid_out;
         }
     } else {
         if (pid_out <= 0.0f) {
             dir  = MOTOR_BACKWARD;
             duty = -pid_out;
         } else {
-            dir  = MOTOR_STOP;
-            duty = 0.0f;
+            dir  = MOTOR_FORWARD;
+            duty = pid_out;
         }
     }
 
